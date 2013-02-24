@@ -10,6 +10,13 @@ import java.awt.Point;
 //this class is used to draw sprites with the mouse.
 class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseListener
 {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1199824844784104333L;
+	/**
+	 * 
+	 */
 	private boolean[][] pixels;
 	private int squareWidth;
 	private int spriteWidth;
@@ -22,12 +29,13 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		spriteWidth = 8;
 		spriteHeight = 8;
 		
+		//initialize array
 		pixels = new boolean[spriteHeight][spriteWidth];
-		for(boolean[] b:pixels)
+		for(int i = 0;i < pixels.length;i++)
 		{
-			for(boolean c:b)
+			for(int j = 0;j < pixels[i].length;j++)
 			{
-				c = false;
+				pixels[i][j] = false;
 			}
 		}
 
@@ -42,12 +50,13 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		this.spriteWidth = width*8;
 		this.spriteHeight = height*8;
 		
+		//initialize array
 		pixels = new boolean[spriteHeight][spriteWidth];
-		for(boolean[] b:pixels)
+		for(int i = 0;i < pixels.length;i++)
 		{
-			for(boolean c:b)
+			for(int j = 0;j < pixels[i].length;j++)
 			{
-				c = false;
+				pixels[i][j] = false;
 			}
 		}
 		
