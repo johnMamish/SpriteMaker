@@ -21,6 +21,8 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 	private int squareWidth;
 	private int spriteWidth;
 	private int spriteHeight;
+	private ByteOrientationOption byteOrientation;
+	private ByteMSBPositionOption MSBPos;
 	private String prefix;
 	private String postfix;
 	
@@ -38,10 +40,14 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 				pixels[i][j] = false;
 			}
 		}
-
+		
 		prevSquare = new Point();
 		this.addMouseMotionListener(this);
 		this.addMouseListener(this);
+		
+		//initialize orientation
+		byteOrientation = ByteOrientationOption.HORIZONTAL;
+		MSBPos = ByteMSBPositionOption.MSBATFRONT;
 	}
 	
 	//width and height are given in bytes, NOT bits.
@@ -64,16 +70,20 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		prevSquare = new Point();
 		this.addMouseMotionListener(this);
 		this.addMouseListener(this);
+		
+		//initialize orientation
+		byteOrientation = ByteOrientationOption.HORIZONTAL;
+		MSBPos = ByteMSBPositionOption.MSBATFRONT;
 	}	
 	
 	//changes the size of the sprite.
-	public void setSize(int width, int height)
+	public void setCanvasSize(int[] widthHeight)
 	{
-		this.spriteWidth = width*8;
-		this.spriteHeight = height*8;
+		this.spriteWidth = widthHeight[0]*8;
+		this.spriteHeight = widthHeight[1]*8;
 		
 		//make a new array of bytes to start drawing on.
-		boolean[][] newCanvas = new boolean[spriteWidth][spriteHeight];
+		boolean[][] newCanvas = new boolean[spriteHeight][spriteWidth];
 		
 		//copy the old one over
 		for(int i = 0;(i < newCanvas.length) && (i < this.pixels.length);i++)
@@ -88,6 +98,11 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		this.pixels = newCanvas;
 	}
 	
+	public int[] getCanvasSize()
+	{
+		return new int[] {spriteWidth/8, spriteHeight/8};
+	}
+	
 	public void setPrefix(String pf)
 	{
 		this.prefix = pf;
@@ -98,14 +113,52 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		this.postfix = pf;
 	}
 	
+	public String[] getOutputFormatting()
+	{
+		return new String[] {prefix, postfix};
+	}
+	
 	public String generateHexString()
 	{
 		//interpret boolean array as a hex string.
-		//for now, orientation will be horizontal and little endian
 		String result = "";
-		int currentNumber;
-		int i, j;
-		for(i = 0;i < pixels.length-1;i++)
+		int currentNumber = 0;
+		int currentX = 0;
+		int currentY = 0;
+		Integer fastIndex;			//value pointed by this is incremented each iteration of inner loop
+		Integer slowIndex;			//value pointed by this is incremented each iteration of outer loop
+		int fastBoundary;
+		int slowBoundary;
+		//Integer x;
+		//Integer y;
+		Integer InnerDirection = currentX;		//If this points to currentX, we are in HORIZONTAL orientation.  If to y, in VERTICAL orientation.
+		
+		//set up Integer vars to point to ints based on Orientation
+		switch(byteOrientation)
+		{
+			case HORIZONTAL:
+			{
+				InnerDirection = currentX;
+				break;
+			}
+			
+			case VERTICAL:
+			{
+				InnerDirection = currentY;
+				break;
+			}
+ 		}
+		
+		//fast and slow index are "constant" for now
+		fastIndex = currentX;
+		slowIndex = currentY;
+		
+		//precondition: array is NOT jagged
+		fastBoundary = pixels[0].length;
+		slowBoundary = pixels.length;
+		
+		
+		/*for(baseX = 0, baseY = 0;i < pixels.length-1;i++)
 		{
 			for(j = 0;j < (spriteWidth/8);j++)
 			{
@@ -145,7 +198,39 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 				currentNumber |= 1;
 			}
 		}
-		result += prefix + Integer.toHexString(0x100 | currentNumber).substring(1);
+		result += prefix + Integer.toHexString(0x100 | currentNumber).substring(1);*/
+		
+		for(slowIndex = 0;slowIndex.compareTo(slowBoundary) < 0;slowIndex++)
+		{
+			System.out.println(slowIndex.compareTo(slowBoundary));
+			for(fastIndex = 0;fastIndex.compareTo(fastBoundary) < 0;fastIndex++)
+			{
+				currentNumber = 0;
+				for(int k = 0;k < 8;k++)
+				{
+					//accumulate number
+					currentNumber <<= 1;
+					if(pixels[currentY][currentX])
+					{
+						currentNumber |= 1;
+					}
+					InnerDirection++;
+				}
+				//add currentNumber to the string
+				result += prefix + Integer.toHexString(0x100 | currentNumber).substring(1) + postfix;
+				
+				//we are comparing pointers, NOT value, so we use ==, not .equals.
+				if(fastIndex == InnerDirection)
+				{
+					fastIndex++;
+				}
+				else
+				{
+					slowIndex -= 8;		//if fastIndex != InnerDirection, this loop must have incremented in the direciton of the slowIndex, which is bad.  Undo it!
+					fastIndex++;
+				}
+			}
+		}
 		
 		return result;
 	}
