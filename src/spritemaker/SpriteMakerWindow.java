@@ -49,7 +49,7 @@ class SpriteMakerWindow extends JFrame
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				OrientationDialog mappingSelection = new OrientationDialog(SpriteMakerWindow.this);
+				OrientationDialog mappingSelection = new OrientationDialog(SpriteMakerWindow.this, drawingPanel.getByteOrientation(), drawingPanel.getMSBPosition());
 				OrientationDiagram od = mappingSelection.showDialog();
 				drawingPanel.setByteOrientation(od.getByteOrientation());
 				drawingPanel.setMSBPosition(od.getMSBPosition());
@@ -64,7 +64,14 @@ class SpriteMakerWindow extends JFrame
 			{
 				int[] canvasSize = drawingPanel.getCanvasSize();
 				SizeSelectionDialog select = new SizeSelectionDialog(canvasSize[0], canvasSize[1], SpriteMakerWindow.this);
-				drawingPanel.setCanvasSize(select.showDialog());
+				try
+				{
+					drawingPanel.setCanvasSize(select.showDialog());
+				}
+				catch(BadCanvasSizeError oops)
+				{
+					System.out.println("ya dun goofed.");
+				}
 			}
 		});
         
@@ -110,7 +117,7 @@ class SpriteMakerWindow extends JFrame
 		this.add(new JComponent(){}, c);
 		
 		//layout for drawing panel.
-		drawingPanel = new SpriteDrawingPanel(1, 1, 12);
+		drawingPanel = new SpriteDrawingPanel(12);
 		drawingPanel.setPostfix(", ");
 		drawingPanel.setPrefix("$");
 		c.gridx = 1;

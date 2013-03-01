@@ -50,11 +50,10 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		MSBPos = ByteMSBPositionOption.MSBATFRONT;
 	}
 	
-	//width and height are given in bytes, NOT bits.
-	public SpriteDrawingPanel(int width, int height, int squareWidth)
+	public SpriteDrawingPanel(int squareWidth)
 	{
-		this.spriteWidth = width*8;
-		this.spriteHeight = height*8;
+		this.spriteWidth = 8;
+		this.spriteHeight = 8;
 		
 		//initialize array
 		pixels = new boolean[spriteHeight][spriteWidth];
@@ -77,10 +76,30 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 	}	
 	
 	//changes the size of the sprite.
-	public void setCanvasSize(int[] widthHeight)
+	public void setCanvasSize(int[] widthHeight) throws BadCanvasSizeError
 	{
-		this.spriteWidth = widthHeight[0]*8;
-		this.spriteHeight = widthHeight[1]*8;
+		//check to make sure the size is ok
+		switch(byteOrientation)
+		{
+			case VERTICAL:
+			{
+				if(widthHeight[1]%8 != 0)
+				{
+					throw new BadCanvasSizeError("you suck.");
+				}
+				break;
+			}
+			case HORIZONTAL:
+			{
+				if(widthHeight[0]%8 != 0)
+				{
+					throw new BadCanvasSizeError("you suck.");
+				}
+			}
+		}
+		
+		this.spriteWidth = widthHeight[0];
+		this.spriteHeight = widthHeight[1];
 		
 		//make a new array of bytes to start drawing on.
 		boolean[][] newCanvas = new boolean[spriteHeight][spriteWidth];
@@ -101,11 +120,42 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 	public void setByteOrientation(ByteOrientationOption boo)
 	{
 		this.byteOrientation = boo;
+		
+		//adjust size if necessary.
+		try
+		{
+			switch(byteOrientation)
+			{
+				case VERTICAL:
+				{
+					this.setCanvasSize(new int[]{this.spriteWidth, ((this.spriteHeight*8)/8)+8});
+				}
+				case HORIZONTAL:
+				{
+					this.setCanvasSize(new int[]{((this.spriteWidth*8)/8)+8, this.spriteHeight});
+				}
+			}
+		}
+		catch(BadCanvasSizeError oops)
+		{
+			System.out.println("we had a problem.");
+			System.exit(1);
+		}
 	}
 	
 	public void setMSBPosition(ByteMSBPositionOption mpo)
 	{
 		this.MSBPos = mpo;
+	}
+	
+	public ByteOrientationOption getByteOrientation()
+	{
+		return this.byteOrientation;
+	}
+	
+	public ByteMSBPositionOption getMSBPosition()
+	{
+		return this.MSBPos;
 	}
 	
 	public int[] getCanvasSize()
@@ -139,7 +189,21 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		int fastBoundary;
 		int slowBoundary;
 		int slowIncrement = 1;					//if slowIndex moves in the same direction as InnerDirection, we need to increment slowIndex by 8.
-
+		int accumulateOr = 0x00;				//when we translate an 8-bit row column of the pixel array into an integer, we may want to add the pixel at the MSB or the LSB, depending on MSBPos.  In order to do this, we or the "accumulator" with this variable, which is set depending on MSBPos.
+		switch(MSBPos)
+		{
+			case MSBATFRONT:
+			{
+				accumulateOr = 0x01;
+				break;
+			}
+			case MSBATBACK:
+			{
+				accumulateOr = 0x80;
+				break;
+			}
+		}
+		
 		Integer InnerDirection = 0;		//If this points to currentX, we are in HORIZONTAL orientation.  If to y, in VERTICAL orientation.
 		
 		//set up Integer vars to point to ints based on Orientation
@@ -166,8 +230,8 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		fastBoundary = pixels[0].length;
 		slowBoundary = pixels.length;
 		
-		System.out.println("fastBoundary = " + fastBoundary);
-		System.out.println("slowBoundary = " + slowBoundary);
+		/*System.out.println("fastBoundary = " + fastBoundary);
+		System.out.println("slowBoundary = " + slowBoundary);*/
 		
 		if(slowIndex == InnerDirection)
 		{
@@ -182,10 +246,22 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 				for(int k = 0;k < 8;k++)
 				{
 					//accumulate number
-					currentNumber <<= 1;
+					switch(MSBPos)
+					{
+						case MSBATFRONT:
+						{
+							currentNumber <<= 1;
+							break;
+						}
+						case MSBATBACK:
+						{
+							currentNumber >>= 1;
+							break;
+						}
+					}
 					if(pixels[XYVals[1]][XYVals[0]])
 					{
-						currentNumber |= 1;
+						currentNumber |= accumulateOr;
 					}
 					XYVals[InnerDirection]++;
 				}
@@ -277,7 +353,7 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		Point vPix = this.realPixelToVirtualPixel(e.getPoint());
 		if((vPix.x == -1) || (vPix.y == -1))
 		{
-			System.out.println("out of bounds index: {" + vPix.x + ", " + vPix.y + "}");
+			//System.out.println("out of bounds index: {" + vPix.x + ", " + vPix.y + "}");
 			return;
 		}
 		

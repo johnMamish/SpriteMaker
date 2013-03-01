@@ -28,7 +28,7 @@ public class OrientationDialog extends JDialog
 	private OrientationDiagram userDiagram;
 	private final Insets stdInsets = new Insets(10, 10, 10, 10);
 	
-	public OrientationDialog(JFrame owner)
+	public OrientationDialog(JFrame owner, ByteOrientationOption boo, ByteMSBPositionOption bmpo)
 	{
 		super(owner, "select canvas size", true);
 		
@@ -76,7 +76,7 @@ public class OrientationDialog extends JDialog
 		c.gridheight = 2;
 		c.anchor = GridBagConstraints.CENTER;
 		c.fill = GridBagConstraints.BOTH;
-		userDiagram = new OrientationDiagram(ByteOrientationOption.HORIZONTAL, ByteMSBPositionOption.MSBATFRONT);
+		userDiagram = new OrientationDiagram(boo, bmpo);		
 		this.add(userDiagram, c);
 		
 		//layout for ok button
