@@ -98,6 +98,16 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		this.pixels = newCanvas;
 	}
 	
+	public void setByteOrientation(ByteOrientationOption boo)
+	{
+		this.byteOrientation = boo;
+	}
+	
+	public void setMSBPosition(ByteMSBPositionOption mpo)
+	{
+		this.MSBPos = mpo;
+	}
+	
 	public int[] getCanvasSize()
 	{
 		return new int[] {spriteWidth/8, spriteHeight/8};
@@ -123,114 +133,78 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		//interpret boolean array as a hex string.
 		String result = "";
 		int currentNumber = 0;
-		int currentX = 0;
-		int currentY = 0;
-		Integer fastIndex;			//value pointed by this is incremented each iteration of inner loop
-		Integer slowIndex;			//value pointed by this is incremented each iteration of outer loop
+		int[] XYVals = new int[]{0, 0};		//Indicates current coordinates in the order
+		int fastIndex;						//value "pointed" by this is incremented each iteration of inner loop
+		int slowIndex;						//value "pointed" by this is incremented each iteration of outer loop
 		int fastBoundary;
 		int slowBoundary;
-		//Integer x;
-		//Integer y;
-		Integer InnerDirection = currentX;		//If this points to currentX, we are in HORIZONTAL orientation.  If to y, in VERTICAL orientation.
+		int slowIncrement = 1;					//if slowIndex moves in the same direction as InnerDirection, we need to increment slowIndex by 8.
+
+		Integer InnerDirection = 0;		//If this points to currentX, we are in HORIZONTAL orientation.  If to y, in VERTICAL orientation.
 		
 		//set up Integer vars to point to ints based on Orientation
 		switch(byteOrientation)
 		{
 			case HORIZONTAL:
 			{
-				InnerDirection = currentX;
+				InnerDirection = 0;		//0 <-> x
 				break;
 			}
 			
 			case VERTICAL:
 			{
-				InnerDirection = currentY;
+				InnerDirection =  1;	//1 <-> y
 				break;
 			}
  		}
 		
 		//fast and slow index are "constant" for now
-		fastIndex = currentX;
-		slowIndex = currentY;
+		fastIndex = 0;			//0 <-> x
+		slowIndex = 1;			//1 <-> y
 		
 		//precondition: array is NOT jagged
 		fastBoundary = pixels[0].length;
 		slowBoundary = pixels.length;
 		
+		System.out.println("fastBoundary = " + fastBoundary);
+		System.out.println("slowBoundary = " + slowBoundary);
 		
-		/*for(baseX = 0, baseY = 0;i < pixels.length-1;i++)
+		if(slowIndex == InnerDirection)
 		{
-			for(j = 0;j < (spriteWidth/8);j++)
-			{
-				currentNumber = 0;
-				for(int k = 0;k < 8;k++)
-				{
-					currentNumber <<= 1;
-					if(pixels[i][j*8+k])
-					{
-						currentNumber |= 1;
-					}
-				}
-				result += prefix + Integer.toHexString(0x100 | currentNumber).substring(1) + postfix;
-			}
+			slowIncrement = 8;
 		}
 		
-		for(j = 0;j < (spriteWidth/8)-1;j++)
+		for(XYVals[slowIndex] = 0;XYVals[slowIndex] < slowBoundary;XYVals[slowIndex] += slowIncrement)
 		{
-			currentNumber = 0;
-			for(int k = 0;k < 8;k++)
-			{
-				currentNumber <<= 1;
-				if(pixels[i][j*8+k])
-				{
-					currentNumber |= 1;
-				}
-			}
-			result += prefix + Integer.toHexString(0x100 | currentNumber).substring(1) + postfix;
-		}
-		
-		currentNumber = 0;
-		for(int k = 0;k < 8;k++)
-		{
-			currentNumber <<= 1;
-			if(pixels[i][j*8+k])
-			{
-				currentNumber |= 1;
-			}
-		}
-		result += prefix + Integer.toHexString(0x100 | currentNumber).substring(1);*/
-		
-		for(slowIndex = 0;slowIndex.compareTo(slowBoundary) < 0;slowIndex++)
-		{
-			System.out.println(slowIndex.compareTo(slowBoundary));
-			for(fastIndex = 0;fastIndex.compareTo(fastBoundary) < 0;fastIndex++)
+			for(XYVals[fastIndex] = 0;XYVals[fastIndex] < fastBoundary;XYVals[fastIndex]++)
 			{
 				currentNumber = 0;
 				for(int k = 0;k < 8;k++)
 				{
 					//accumulate number
 					currentNumber <<= 1;
-					if(pixels[currentY][currentX])
+					if(pixels[XYVals[1]][XYVals[0]])
 					{
 						currentNumber |= 1;
 					}
-					InnerDirection++;
+					XYVals[InnerDirection]++;
 				}
 				//add currentNumber to the string
 				result += prefix + Integer.toHexString(0x100 | currentNumber).substring(1) + postfix;
 				
-				//we are comparing pointers, NOT value, so we use ==, not .equals.
-				if(fastIndex == InnerDirection)
+				if(slowIndex == InnerDirection)
 				{
-					fastIndex++;
+					XYVals[slowIndex] -= 8;		//if fastIndex != InnerDirection, this loop must have incremented in the direciton of the slowIndex, which is bad.  Undo it!
 				}
 				else
 				{
-					slowIndex -= 8;		//if fastIndex != InnerDirection, this loop must have incremented in the direciton of the slowIndex, which is bad.  Undo it!
-					fastIndex++;
+					XYVals[fastIndex]--;
 				}
 			}
 		}
+		
+		//remove last postfix
+		result = result.substring(0, result.length()-postfix.length());
 		
 		return result;
 	}
@@ -238,7 +212,7 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 	private Point realPixelToVirtualPixel(Point p)
 	{
 		Point result = new Point(p.x/squareWidth, p.y/squareWidth);
-		if((result.x >= spriteWidth) || (result.y >= spriteHeight))
+		if((result.x >= spriteWidth) || (result.y >= spriteHeight) || (result.x < 0) || (result.y < 0))
 		{
 			result.x = -1;
 			result.y = -1;
@@ -303,6 +277,7 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		Point vPix = this.realPixelToVirtualPixel(e.getPoint());
 		if((vPix.x == -1) || (vPix.y == -1))
 		{
+			System.out.println("out of bounds index: {" + vPix.x + ", " + vPix.y + "}");
 			return;
 		}
 		

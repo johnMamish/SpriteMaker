@@ -50,7 +50,9 @@ class SpriteMakerWindow extends JFrame
 			public void actionPerformed(ActionEvent e)
 			{
 				OrientationDialog mappingSelection = new OrientationDialog(SpriteMakerWindow.this);
-				mappingSelection.showDialog();
+				OrientationDiagram od = mappingSelection.showDialog();
+				drawingPanel.setByteOrientation(od.getByteOrientation());
+				drawingPanel.setMSBPosition(od.getMSBPosition());
 			}
 		});
         
