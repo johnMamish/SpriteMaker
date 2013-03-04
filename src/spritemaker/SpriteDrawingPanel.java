@@ -35,6 +35,7 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 	
 	public SpriteDrawingPanel()
 	{
+		this.grabFocus();
 		spriteWidth = 8;
 		spriteHeight = 8;
 		
@@ -51,6 +52,7 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		prevSquare = new Point();
 		this.addMouseMotionListener(this);
 		this.addMouseListener(this);
+		this.addKeyListener(this);
 		
 		//initialize orientation
 		byteOrientation = ByteOrientationOption.HORIZONTAL;
@@ -84,6 +86,7 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		prevSquare = new Point();
 		this.addMouseMotionListener(this);
 		this.addMouseListener(this);
+		this.addKeyListener(this);
 		
 		//initialize orientation
 		byteOrientation = ByteOrientationOption.HORIZONTAL;
@@ -395,10 +398,8 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		//if pixels are selected, draw them with a box around them.
 		if((controlState == SpriteDrawingPanel.SELECTBLOCK) && !selectStartCorner.equals(selectEndCorner))
 		{
-			
-			
 			//draw a green box around the pixels.
-			drawing.setColor(new Color(0x40ff40));
+			drawing.setColor(new Color(0xff0000));
 			Point realTLC = this.virtualPixelToRealPixel(selectStartCorner);		//top left pixel
 			Point realLRC = this.virtualPixelToRealPixel(selectEndCorner);			//lower right pixel
 			
@@ -422,11 +423,34 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 			
 			//in order to include the bottom row of squares, we need to increment
 			//the lower right pixel by one square width
-			realLRC.x += squareWidth-1;
-			realLRC.y += squareWidth-1;
+			realLRC.x += squareWidth;
+			realLRC.y += squareWidth;
 			
 			//draw the rectangle
 			drawing.drawRect(realTLC.x, realTLC.y, realLRC.x-realTLC.x, realLRC.y-realTLC.y);
+			
+			//draw the squares in the section we're moving.
+			//...but first watch out for dem null pointers
+			if(selectedPixels != null)
+			{
+				for(int i = 0;i < selectedPixels.length;i++)
+				{
+					for(int j = 0;j < selectedPixels[0].length;j++)
+					{
+						Color center = null;
+						if(selectedPixels[i][j])
+						{
+							center = new Color(0x000000);
+						}
+						else
+						{
+							center = new Color(0xffffff);
+						}
+						drawing.setColor(center);
+						drawing.fillRect((j+selectStartCorner.x)*squareWidth+1, (i+selectStartCorner.y)*squareWidth+1, squareWidth-1, squareWidth-1);
+					}
+				}
+			}
 		}
 	}
 
@@ -435,6 +459,7 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 	private Point selectStartCorner;
 	private Point selectEndCorner;
 	private boolean initialMarkAction;
+	private boolean selectionGrabbed;
 	
 	public void mouseDragged(MouseEvent e)
 	{
@@ -467,10 +492,30 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 				
 				case SpriteDrawingPanel.SELECTBLOCK:
 				{
-					//if a block is selected and we are clicking inside it, do
-					//one thing.  Otherwise, do something else.
-					if(this.realPixelToVirtualPixel(e.getPoint()).x != -1);
-						selectEndCorner = this.realPixelToVirtualPixel(e.getPoint());
+					//if we grabbed a selection, move both the starting and ending
+					//points of the selection in order to move the whole thing.
+					//otherwise, we're selecting a block, so move just the ending point
+					if(selectionGrabbed)
+					{
+						Point dP = new Point(vPix.x-prevSquare.x, vPix.y-prevSquare.y);
+						System.out.println(dP);
+						
+						//check to make sure that the selection will still be in bounds.
+						Point testStart = new Point(selectStartCorner);
+						testStart.translate(dP.x, dP.y);
+						Point testEnd = new Point(selectEndCorner);
+						testEnd.translate(dP.x, dP.y);
+						if((testStart.x >= 0) && (testEnd.x < pixels[0].length) && (testStart.y >= 0) && (testEnd.y < pixels.length))
+						{
+							selectStartCorner = testStart;
+							selectEndCorner = testEnd;
+							prevSquare = vPix;
+						}
+					}
+					else
+					{
+						selectEndCorner = vPix;
+					}
 					break;
 				}
 			}
@@ -479,6 +524,8 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 	
 	public void mousePressed(MouseEvent e)
 	{
+		this.requestFocusInWindow();
+		
 		//check to make sure we are not going out of boudns
 		Point vPix = this.realPixelToVirtualPixel(e.getPoint());
 		if((vPix.x == -1) || (vPix.y == -1))
@@ -500,6 +547,32 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 			
 			case SpriteDrawingPanel.SELECTBLOCK:
 			{
+				//if there are no pixels selected, we don't have to check to see
+				//if we are inside the bounds of the selected rectangle
+				if(selectedPixels != null)
+				{
+					//if we are inside the square...
+					if((vPix.x >= selectStartCorner.x) && (vPix.x <= selectEndCorner.x) && (vPix.y >= selectStartCorner.y) && (vPix.y <= selectEndCorner.y))
+					{
+						//pick it up and log the point we grabbed it at.
+						selectionGrabbed = true;
+						prevSquare = vPix;
+						break;
+					}
+					//if we are outside the square...
+					else
+					{
+						//dump the pixels where they are.
+						for(int i = 0;i <= selectEndCorner.y-selectStartCorner.y;i++)
+						{
+							for(int j = 0;j <= selectEndCorner.x-selectStartCorner.x;j++)
+							{
+								this.pixels[selectStartCorner.y+i][selectStartCorner.x+j] = this.selectedPixels[i][j];
+							}
+						}
+						this.selectedPixels = null;
+					}
+				}
 				selectEndCorner = (selectStartCorner = vPix);
 				break;
 			}
@@ -516,8 +589,7 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		{
 			case SpriteDrawingPanel.SELECTBLOCK:
 			{
-				//if no pixels are selected, select a block of pixels
-				if(true)
+				if(!selectionGrabbed)
 				{
 					//check to see if we selected just one square.  If so, deselect.
 					if(this.selectStartCorner.equals(this.selectEndCorner))
@@ -529,7 +601,7 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 					//We selected more than one square.  Copy all of the selected
 					//area to the selectedPixels array and clear that part of the
 					//main pixel array.
-					
+
 					//first, put the selectStartCorner and selectEndCorner in order
 					//such that selectStartCorner.x <= selectEndCorner.x and
 					//selectStartCorner.y <= selectEndCorner.y.
@@ -546,14 +618,14 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 						selectStartCorner.y = selectEndCorner.y;
 						selectEndCorner.y = temp;
 					}
-					
+
 					//now, we make a new boolean array large enough to hold the
 					//pixels we are going to move and point selectedPixels at it.
 					int height = selectEndCorner.y-selectStartCorner.y+1;
 					int width = selectEndCorner.x-selectStartCorner.x+1;
 					this.selectedPixels = new boolean[height][width];
-					
-					System.out.println("width of array = " + width + "    height of array = " + height);
+
+					//System.out.println("width of array = " + width + "    height of array = " + height);
 					//copy over the data from the selected area and clear out the selected
 					//area in the main array.
 					for(int i = 0;i <= selectEndCorner.y-selectStartCorner.y;i++)
@@ -567,6 +639,7 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 
 					//nothing else to do, I think...
 				}
+				selectionGrabbed = false;
 			}
 		}
 	}
@@ -578,12 +651,26 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 	public void mouseExited(MouseEvent e){}
 
 	@Override
-	public void keyTyped(KeyEvent e){}
+	public void keyTyped(KeyEvent e){System.out.println("sadf");}
 
 	@Override
 	public void keyPressed(KeyEvent e)
 	{
 		System.out.println(e.getKeyCode());
+		switch(e.getKeyCode())
+		{
+			case KeyEvent.VK_DELETE:
+			{
+									System.out.println("foozyuaasjdf");
+				//if we have a piece selected, delete that thang.
+				if(selectedPixels != null)
+				{
+					System.out.println("foozyuaasjdf");
+					selectedPixels = null;
+					selectEndCorner = selectStartCorner;
+				}
+			}
+		}
 	}
 
 	@Override
