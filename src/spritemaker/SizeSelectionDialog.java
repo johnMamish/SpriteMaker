@@ -10,6 +10,7 @@ import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 public class SizeSelectionDialog extends JDialog
@@ -23,9 +24,9 @@ public class SizeSelectionDialog extends JDialog
 	private JTextField widthInput;
 	private JTextField heightInput;
 	private final Insets stdInsets = new Insets(10, 10, 10, 10);
+	private ByteOrientationOption byteOrientation;
 	
-	
-	public SizeSelectionDialog(int initialWidth, int initialHeight, JFrame owner)
+	public SizeSelectionDialog(int initialWidth, int initialHeight, ByteOrientationOption boo, JFrame owner)
 	{
 		super(owner, "select canvas size", true);
 		
@@ -38,17 +39,22 @@ public class SizeSelectionDialog extends JDialog
 		//layout for row 1.
 		c.gridx = 0;
 		c.gridy = 0;
-		c.weightx = 1;
+		c.weightx = 3;
 		c.weighty = 1;
 		c.insets = stdInsets;
 		c.anchor = GridBagConstraints.EAST;
-		c.fill = GridBagConstraints.NONE;
-		JLabel widthLabel = new JLabel("width");
+		c.fill = GridBagConstraints.BOTH;
+		JTextArea widthLabel = new JTextArea("width in pixels");
+		widthLabel.setLineWrap(true);
+		widthLabel.setWrapStyleWord(true);
+		widthLabel.setBackground(this.getBackground());
+		widthLabel.setEditable(false);
 		this.add(widthLabel, c);
 		
 		c.gridx = 1;
+		c.weightx = 0;
 		c.anchor = GridBagConstraints.WEST;
-		//c.fill = GridBagConstraints.HORIZONTAL;
+		c.fill = GridBagConstraints.NONE;
 		widthInput = new JTextField(10);
 		widthInput.setText(Integer.toString(this.width, 10));
 		this.add(widthInput, c);
@@ -56,16 +62,21 @@ public class SizeSelectionDialog extends JDialog
 		//layout for row 2.
 		c.gridx = 0;
 		c.gridy = 1;
-		c.weightx = 1;
+		c.weightx = 3;
 		c.weighty = 1;
 		c.anchor = GridBagConstraints.EAST;
-		c.fill = GridBagConstraints.NONE;
-		JLabel heightLabel = new JLabel("height");
+		c.fill = GridBagConstraints.BOTH;
+		JTextArea heightLabel = new JTextArea("height in pixels");
+		heightLabel.setLineWrap(true);
+		heightLabel.setWrapStyleWord(true);
+		heightLabel.setBackground(this.getBackground());
+		heightLabel.setEditable(false);
 		this.add(heightLabel, c);
 		
 		c.gridx = 1;
+		c.weightx = 0;
 		c.anchor = GridBagConstraints.WEST;
-		//c.fill = GridBagConstraints.HORIZONTAL;
+		c.fill = GridBagConstraints.NONE;
 		heightInput = new JTextField(10);
 		heightInput.setText(Integer.toString(this.height, 10));
 		this.add(heightInput, c);
@@ -92,6 +103,24 @@ public class SizeSelectionDialog extends JDialog
 			}
 		});
 		this.add(okButton, c);
+		
+		//depending on the pixel orientation, tell the user which option (width or
+		//height) must be a multiple of 8.
+		this.byteOrientation = boo;
+		switch(byteOrientation)
+		{
+			case HORIZONTAL:
+			{
+				widthLabel.setText(widthLabel.getText() + " (must be a multiple of 8)");
+				break;
+			}
+			
+			case VERTICAL:
+			{
+				heightLabel.setText(heightLabel.getText() + " (must be a multiple of 8)");
+				break;
+			}
+		}
 		
 		this.setSize(300, 200);
 		this.setResizable(false);

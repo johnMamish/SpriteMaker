@@ -63,14 +63,34 @@ class SpriteMakerWindow extends JFrame
 			public void actionPerformed(ActionEvent e)
 			{
 				int[] canvasSize = drawingPanel.getCanvasSize();
-				SizeSelectionDialog select = new SizeSelectionDialog(canvasSize[0], canvasSize[1], SpriteMakerWindow.this);
-				try
+				String restrictedDirection = "";
+				switch(drawingPanel.getByteOrientation())
 				{
-					drawingPanel.setCanvasSize(select.showDialog());
+					case VERTICAL:
+					{
+						restrictedDirection = "height";
+						break;
+					}
+					
+					case HORIZONTAL:
+					{
+						restrictedDirection = "width";
+						break;
+					}
 				}
-				catch(BadCanvasSizeError oops)
+				while(true)
 				{
-					System.out.println("ya dun goofed.");
+					try
+					{
+						SizeSelectionDialog select = new SizeSelectionDialog(canvasSize[0], canvasSize[1], drawingPanel.getByteOrientation(), SpriteMakerWindow.this);
+						drawingPanel.setCanvasSize(select.showDialog());
+					}
+					catch(BadCanvasSizeError oops)
+					{
+						JOptionPane.showMessageDialog(SpriteMakerWindow.this, restrictedDirection + " must be a multiple of 8!");
+						continue;
+					}
+					break;
 				}
 			}
 		});
