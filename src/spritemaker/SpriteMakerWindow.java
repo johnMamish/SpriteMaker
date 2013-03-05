@@ -155,7 +155,7 @@ class SpriteMakerWindow extends JFrame
 					return;
 				}
 				
-				SpriteMakerWindow.this.drawingPanel.importImage(image, new Color(0x60, 0x60, 0x60), false);
+				SpriteMakerWindow.this.drawingPanel.importImage(image, new Color(0xb0, 0xb0, 0xb0), false);
 			}
 		});
 		

@@ -267,15 +267,16 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 		int aRGB = a.getRGB();
 		int bRGB = b.getRGB();
 		
-		int result = 0;
+		/*int result = 0;
 		int sign = (int)Math.signum((aRGB&0xff0000)-(bRGB&0xff0000));
 		result += sign*(int)Math.pow(((aRGB&0xff0000)-(bRGB&0xff0000)), 2);
 		sign = (int)Math.signum((aRGB&0x00ff00)-(bRGB&0x00ff00));
 		result += sign*(int)Math.pow(((aRGB&0x00ff00)-(bRGB&0x00ff00)), 2);
 		sign = (int)Math.signum((aRGB&0x0000ff)-(bRGB&0x0000ff));
-		result += sign*(int)Math.pow(((aRGB&0x0000ff)-(bRGB&0x0000ff)), 2);
+		result += sign*(int)Math.pow(((aRGB&0x0000ff)-(bRGB&0x0000ff)), 2);*/
 		
-		return result;
+		
+		return 0;
 	}
 	
 	public void importImage(BufferedImage theImage, Color RGBThreshold, boolean invert)
@@ -307,12 +308,17 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 		}
 		
 		//shade pixels
+		//calcuate greyscale equivlant of threshold color
+		int threshInt = RGBThreshold.getRGB();
+		int thresholdAverage = ((threshInt&0xff0000)+(threshInt&0x00ff00)+(threshInt&0x0000ff))/3;
 		boolean doShade;
 		for(int i = 0;i < theImage.getHeight();i++)
 		{
 			for(int j = 0;j < theImage.getWidth();j++)
 			{
-				doShade = this.compareColors(new Color(theImage.getRGB(j, i)), RGBThreshold) > 0;
+				int pixelInt = theImage.getRGB(j, i);
+				int pixelAverage = ((pixelInt&0xff0000)+(pixelInt&0x00ff00)+(pixelInt&0x0000ff))/3;
+				doShade = pixelAverage < thresholdAverage;
 				pixels[i][j] = doShade;
 			}
 		}
