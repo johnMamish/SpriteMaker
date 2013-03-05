@@ -154,8 +154,16 @@ class SpriteMakerWindow extends JFrame
 					JOptionPane.showMessageDialog(SpriteMakerWindow.this, "image could not be opened");
 					return;
 				}
-				
-				SpriteMakerWindow.this.drawingPanel.importImage(image, new Color(0xb0, 0xb0, 0xb0), false);
+				String s = (String)JOptionPane.showInputDialog(
+									SpriteMakerWindow.this,
+									"Enter a grayscale color threshold\nin hexidecimal.",
+									"Select color threshold",
+									JOptionPane.PLAIN_MESSAGE,
+									null,
+									null,
+									"40");
+				int colorThresh = Integer.parseInt(s, 16);
+				SpriteMakerWindow.this.drawingPanel.importImage(image, new Color(colorThresh, colorThresh, colorThresh), false);
 			}
 		});
 		

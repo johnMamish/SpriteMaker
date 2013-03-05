@@ -294,11 +294,11 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 		{
 			if(this.byteOrientation == ByteOrientationOption.VERTICAL)
 			{
-				this.setCanvasSize(new int[]{theImage.getWidth(), ((theImage.getHeight()+8)/8)*8});
+				this.setCanvasSize(new int[]{theImage.getWidth(), ((theImage.getHeight()+7)/8)*8});
 			}
 			else
 			{
-				this.setCanvasSize(new int[]{((theImage.getWidth()+8)/8)*8, theImage.getHeight()});
+				this.setCanvasSize(new int[]{((theImage.getWidth()+7)/8)*8, theImage.getHeight()});
 			}
 		}
 		catch(BadCanvasSizeError oops)
@@ -780,7 +780,7 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 	public void mouseExited(MouseEvent e){}
 
 	@Override
-	public void keyTyped(KeyEvent e){System.out.println("sadf");}
+	public void keyTyped(KeyEvent e){}
 
 	@Override
 	public void keyPressed(KeyEvent e)
@@ -790,11 +790,9 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 		{
 			case KeyEvent.VK_DELETE:
 			{
-									System.out.println("foozyuaasjdf");
 				//if we have a piece selected, delete that thang.
 				if(selectedPixels != null)
 				{
-					System.out.println("foozyuaasjdf");
 					selectedPixels = null;
 					selectEndCorner = selectStartCorner;
 				}
