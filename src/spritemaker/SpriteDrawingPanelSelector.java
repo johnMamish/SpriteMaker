@@ -21,7 +21,7 @@ public class SpriteDrawingPanelSelector extends JComponent implements MouseListe
 	private int selectedSquare;
 	private int drawingMode;
 	private final int panelWidth = 2;
-	private final int numSquares = 3;
+	private final int numSquares = 4;
 	private final Color regularColor = new Color(0x505050);
 	private final Color selectedColor = new Color(0x909090);
 	

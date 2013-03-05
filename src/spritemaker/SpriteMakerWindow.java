@@ -1,13 +1,20 @@
 package spritemaker;
 
+import java.awt.Color;
+import java.awt.FileDialog;
 import javax.swing.*;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
+import javax.imageio.ImageIO;
 
 class SpriteMakerWindow extends JFrame
 {
@@ -33,6 +40,7 @@ class SpriteMakerWindow extends JFrame
     JMenuItem pixelMappingMenu;
     JMenuItem sizeMenu;
     JMenuItem outputFormatOptions;
+	JMenuItem importImage;
     
 	private SpriteDrawingPanel drawingPanel;
 	private JButton getStringButton;
@@ -116,11 +124,47 @@ class SpriteMakerWindow extends JFrame
 			}
 		});
         
+		importImage = new JMenuItem("import image");
+		importImage.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				//use a FileDialog to get the file we want to write.
+				FileDialog fd = new FileDialog(SpriteMakerWindow.this, "select a file", FileDialog.LOAD);
+				//fd.setMultipleMode(false);
+
+				fd.setFilenameFilter(new FilenameFilter()
+				{
+					//accept all files.
+					public boolean accept(File dir, String name)
+					{
+						return true;
+					}
+				});
+				fd.setVisible(true);
+				String filepath = fd.getDirectory()+fd.getFile();
+				BufferedImage image = null;
+				try
+				{
+					image = ImageIO.read(new File(filepath));
+				}
+				catch(IOException oops)
+				{
+					JOptionPane.showMessageDialog(SpriteMakerWindow.this, "image could not be opened");
+					return;
+				}
+				
+				SpriteMakerWindow.this.drawingPanel.importImage(image, new Color(0x60, 0x60, 0x60), false);
+			}
+		});
+		
         //next, set up menu items and add submenus
         propertiesMenu = new JMenu("Format Options");
         propertiesMenu.add(pixelMappingMenu);
         propertiesMenu.add(outputFormatOptions);
         propertiesMenu.add(sizeMenu);
+		propertiesMenu.add(importImage);
         
         //now, set up the main menu bar
         mainMenuBar = new JMenuBar();

@@ -7,6 +7,7 @@ import java.awt.event.*;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.image.BufferedImage;
 
 //this class is used to draw sprites with the mouse.
 public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseListener, KeyListener
@@ -25,7 +26,8 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 		public final static int NONE = 0;
 		public final static int PAINTNORMAL = 1;
 		public final static int ERASENORMAL = 2;
-		public final static int SELECTBLOCK = 3;
+		public final static int PAINTERASE = 3;
+		public final static int SELECTBLOCK = 4;
 	
 	private int spriteWidth;
 	private int spriteHeight;
@@ -78,8 +80,7 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 		{
 			for(int j = 0;j < pixels[i].length;j++)
 			{
-				//pixels[i][j] = false;
-				pixels[i][j] = (Math.random() > 0.5);
+				pixels[i][j] = false;
 			}
 		}
 		
@@ -98,7 +99,7 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 		selectEndCorner = new Point(0, 0);
 		
 		//init drawing state
-		controlState = SpriteDrawingPanel.SELECTBLOCK;
+		controlState = SpriteDrawingPanel.NONE;
 	}	
 	
 	//changes the size of the sprite.
@@ -256,6 +257,65 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 	public String[] getOutputFormatting()
 	{
 		return new String[] {prefix, postfix};
+	}
+	
+	//result < 0 if a < b
+	//result == 0 if a == b
+	//result > 0 if a > b
+	private int compareColors(Color a, Color b)
+	{
+		int aRGB = a.getRGB();
+		int bRGB = b.getRGB();
+		
+		int result = 0;
+		int sign = (int)Math.signum((aRGB&0xff0000)-(bRGB&0xff0000));
+		result += sign*(int)Math.pow(((aRGB&0xff0000)-(bRGB&0xff0000)), 2);
+		sign = (int)Math.signum((aRGB&0x00ff00)-(bRGB&0x00ff00));
+		result += sign*(int)Math.pow(((aRGB&0x00ff00)-(bRGB&0x00ff00)), 2);
+		sign = (int)Math.signum((aRGB&0x0000ff)-(bRGB&0x0000ff));
+		result += sign*(int)Math.pow(((aRGB&0x0000ff)-(bRGB&0x0000ff)), 2);
+		
+		return result;
+	}
+	
+	public void importImage(BufferedImage theImage, Color RGBThreshold, boolean invert)
+	{
+		//resize the canvas
+		//first, make sure the image isn't larger than an arbitrary size
+		if((theImage.getWidth() > 64) || (theImage.getHeight() > 64))
+		{
+			JOptionPane.showMessageDialog(this, "Image too large.");
+			return;
+		}
+		
+		//actually resize the canvas
+		try
+		{
+			if(this.byteOrientation == ByteOrientationOption.VERTICAL)
+			{
+				this.setCanvasSize(new int[]{theImage.getWidth(), ((theImage.getHeight()+8)/8)*8});
+			}
+			else
+			{
+				this.setCanvasSize(new int[]{((theImage.getWidth()+8)/8)*8, theImage.getHeight()});
+			}
+		}
+		catch(BadCanvasSizeError oops)
+		{
+			JOptionPane.showMessageDialog(this, "The application encountered a canvas sizing error and must close.");
+			System.exit(1);
+		}
+		
+		//shade pixels
+		boolean doShade;
+		for(int i = 0;i < theImage.getHeight();i++)
+		{
+			for(int j = 0;j < theImage.getWidth();j++)
+			{
+				doShade = this.compareColors(new Color(theImage.getRGB(j, i)), RGBThreshold) > 0;
+				pixels[i][j] = doShade;
+			}
+		}
 	}
 	
 	public String generateHexString()
@@ -520,7 +580,7 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 				case SpriteDrawingPanel.PAINTNORMAL:
 				{
 					prevSquare = this.realPixelToVirtualPixel(e.getPoint());
-					pixels[prevSquare.y][prevSquare.x] = initialMarkAction;
+					pixels[prevSquare.y][prevSquare.x] = true;
 					break;
 				}
 				
@@ -531,6 +591,13 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 					break;
 				}
 				
+				case SpriteDrawingPanel.PAINTERASE:
+				{
+					prevSquare = this.realPixelToVirtualPixel(e.getPoint());
+					pixels[prevSquare.y][prevSquare.x] = initialMarkAction;
+					break;
+				}
+					
 				case SpriteDrawingPanel.SELECTBLOCK:
 				{
 					//if we grabbed a selection, move both the starting and ending
@@ -580,6 +647,21 @@ public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, M
 			{
 				//log the point w pressed at.  If we are clicking the mouse, we must not
 				//have a previous point.
+				prevSquare = vPix;
+				//initialMarkAction = !pixels[prevSquare.y][prevSquare.x];
+				pixels[prevSquare.y][prevSquare.x] = true;
+				break;
+			}
+			
+			case SpriteDrawingPanel.ERASENORMAL:
+			{
+				prevSquare = vPix;
+				pixels[prevSquare.y][prevSquare.x] = false;
+				break;
+			}
+			
+			case SpriteDrawingPanel.PAINTERASE:
+			{
 				prevSquare = vPix;
 				initialMarkAction = !pixels[prevSquare.y][prevSquare.x];
 				pixels[prevSquare.y][prevSquare.x] = initialMarkAction;
