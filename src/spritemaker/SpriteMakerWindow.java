@@ -37,11 +37,18 @@ class SpriteMakerWindow extends JFrame
 	private SpriteDrawingPanel drawingPanel;
 	private JButton getStringButton;
 	private JTextArea stringOutput;
+	private SpriteDrawingPanelSelector drawOptions;
 	
 	private final int updateRate = 20;
 
 	public SpriteMakerWindow()
 	{
+		//initialize components
+		getStringButton = new JButton("make string");
+		stringOutput = new JTextArea(10, 10);
+		drawingPanel = new SpriteDrawingPanel(12);
+		this.drawOptions = new SpriteDrawingPanelSelector(this.drawingPanel);
+		
 		//set up menubar
         pixelMappingMenu = new JMenuItem("Pixel Mapping");
         pixelMappingMenu.addActionListener(new ActionListener()
@@ -134,10 +141,9 @@ class SpriteMakerWindow extends JFrame
 		c.gridy = 0;
 		c.weightx = 0;
 		c.weighty = 1;
-		this.add(new JComponent(){}, c);
+		this.add(drawOptions, c);
 		
 		//layout for drawing panel.
-		drawingPanel = new SpriteDrawingPanel(12);
 		drawingPanel.setPostfix(", ");
 		drawingPanel.setPrefix("$");
 		c.gridx = 1;
@@ -152,7 +158,6 @@ class SpriteMakerWindow extends JFrame
 		c.weightx = 0;
 		c.gridy = 1;
 		c.gridx = 0;
-		getStringButton = new JButton("make string");
 		getStringButton.addActionListener(new GenerateStringListener());
 		this.add(getStringButton, c);
 		
@@ -163,7 +168,6 @@ class SpriteMakerWindow extends JFrame
 		c.weighty = 0;
 		c.weightx = 0;
 		c.gridwidth = 2;
-		stringOutput = new JTextArea(10, 10);
 		stringOutput.setEditable(false);
 		stringOutput.setLineWrap(true);
 		stringOutput.setWrapStyleWord(true);
@@ -179,6 +183,7 @@ class SpriteMakerWindow extends JFrame
 	{
 		public void run()
 		{
+			drawOptions.repaint();
 			drawingPanel.repaint();
 		}
 	}

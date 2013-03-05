@@ -9,7 +9,7 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 
 //this class is used to draw sprites with the mouse.
-class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseListener, KeyListener
+public class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseListener, KeyListener
 {
 	/**
 	 * 
@@ -22,6 +22,7 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 	private boolean[][] selectedPixels;
 	private int squareWidth;
 	private int controlState;			//controls the state machine that decides whether we draw, erase, etc...
+		public final static int NONE = 0;
 		public final static int PAINTNORMAL = 1;
 		public final static int ERASENORMAL = 2;
 		public final static int SELECTBLOCK = 3;
@@ -177,9 +178,49 @@ class SpriteDrawingPanel extends JPanel implements MouseMotionListener, MouseLis
 		}
 		catch(BadCanvasSizeError oops)
 		{
-			System.out.println("we had a problem.");
+			JOptionPane.showMessageDialog(this, "The application encountered a canvas sizing error and must close.");
 			System.exit(1);
 		}
+	}
+	
+	public void setMode(int newDrawingMode)
+	{
+		//depending on what mode we're changing FROM, we may need to clean
+		//up a bit.  As far as I know, the only mode that this makes a difference
+		//with is with SELECTBLOCK where we need to "set down" the block of pixels
+		switch(controlState)
+		{
+			case SpriteDrawingPanel.PAINTNORMAL:
+			{
+				break;
+			}
+			
+			case SpriteDrawingPanel.ERASENORMAL:
+			{
+				break;
+			}
+			
+			case SpriteDrawingPanel.SELECTBLOCK:
+			{
+				//if a block was selected, copy the contents to the pixels array
+				if(selectedPixels != null)
+				{
+					//dump the pixels where they are.
+					for(int i = 0;i <= selectEndCorner.y-selectStartCorner.y;i++)
+					{
+						for(int j = 0;j <= selectEndCorner.x-selectStartCorner.x;j++)
+						{
+							this.pixels[selectStartCorner.y+i][selectStartCorner.x+j] = this.selectedPixels[i][j];
+						}
+					}
+					this.selectedPixels = null;
+				}
+				selectStartCorner.move(0, 0);
+				selectEndCorner.move(0, 0);
+			}
+		}
+		
+		controlState = newDrawingMode;
 	}
 	
 	public void setMSBPosition(ByteMSBPositionOption mpo)
